@@ -158,6 +158,7 @@ loom_check_test_suite(
         "vector_dot_f16.loom-test",
         "vector_dot_interleave.loom-test",
         "vector_dynamic_slice.loom-test",
+        "vector_f16_narrow_sign.loom-test",
         "vector_float_comparison.loom-test",
         "vector_float_zero_comparison.loom-test",
         "vector_index_conversion.loom-test",

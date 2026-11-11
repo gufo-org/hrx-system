@@ -469,14 +469,16 @@ def _evaluate_packet_lane(
                 assert state["saturation"] in (0, 1)
                 assert state["rounding"] in (0, 12)
                 assert state["srs-mode"] == 0
-                value = operands["src"] & 0xFFFFFFFF
+                value = _s32(operands["src"])
                 value = (
-                    _round_unsigned_to_even(value, operands["su"])
+                    _round_signed_to_even(value, operands["su"])
                     if state["rounding"] == 12
                     else value >> operands["su"]
                 )
                 if state["saturation"]:
-                    value = min(value, 0xFFFF)
+                    value = min(max(value, 0), 0xFFFF)
+                else:
+                    value &= 0xFFFF
             elif descriptor_key == "narrow.2x.b-to-w.signed.configured":
                 assert state["saturation"] == 1
                 assert state["rounding"] == 12

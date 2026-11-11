@@ -2063,6 +2063,9 @@ def _f32_chunk_to_float16(
     sign_accumulator, sign_filler = _i32_packet_accumulator(
         program, f"{prefix}_sign", sign_bits
     )
+    # SRS consumes a signed accumulator even for an unsigned result. Preserve
+    # the sign payload as bits instead of clamping negative inputs to zero.
+    program.state("saturation", 0)
     sign = _round_i32_packet_to_i16(
         program,
         f"{prefix}_sign",
@@ -2070,6 +2073,7 @@ def _f32_chunk_to_float16(
         sign_filler,
         _F32_PACKET_FORMAT.bit_width - result_format.bit_width,
     )
+    program.state("saturation", 1)
 
     absolute = program.binary(
         f"{prefix}_absolute", "and.bits512", source, state.nonsign_mask
@@ -3640,6 +3644,10 @@ def _float_chunk_to_fp8_i16(
     sign_accumulator, sign_filler = _i32_packet_accumulator(
         program, f"{prefix}_sign", sign_bits
     )
+    # SRS consumes a signed accumulator even for an unsigned result. Preserve
+    # the sign payload as bits instead of clamping negative inputs to zero.
+    if source_format.bit_width == 32:
+        program.state("saturation", 0)
     result_sign = _round_i32_packet_to_i16(
         program,
         f"{prefix}_result_sign",
@@ -3647,6 +3655,8 @@ def _float_chunk_to_fp8_i16(
         sign_filler,
         source_format.bit_width - 8,
     )
+    if source_format.bit_width == 32:
+        program.state("saturation", 1)
 
     if isinstance(strategy, _DirectFloat8Narrowing):
         absolute_accumulator, filler = _i32_packet_accumulator(
