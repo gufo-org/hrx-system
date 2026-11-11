@@ -2,8 +2,8 @@
 
 These additions address findings in [Gufo #1144](https://github.com/gufo-org/gufo/issues/1144)
 after staging base `d8345774e34e0b0824f11661d331a323e8771dd9`. Each change
-has its own branch, merged separately into `gufo-staging`. Neither change is
-an upstream merge or a new Gufo runtime pin.
+has its own branch, merged separately into `gufo-staging`. None is an
+upstream merge.
 
 ## Preserve floating vector signs
 
@@ -64,6 +64,45 @@ against its independent scalar decoder. An eight-block variant matching the
 page's 576-byte group also passes three native trials. Navigation and relative
 links resolve; the existing site contract test passes. A complete static-site
 build was not run.
+
+## Schedule AIE2P element-wise leaves in source order
+
+Branch: `perf/aie2p-schedule`, commit `b2409b515`.
+
+**Issue:** The AIE2P leaf scheduler always used resource-stall scoring. In
+element-wise code it serializes independent chains that the source order
+interleaves: four independent `vadd.f32x16` chains issued one add every three
+cycles, although the physical planner accepts one per cycle. Only 14 of 251
+instructions in that loop co-issued. Source-priority scheduling issues the
+same loop at one add per cycle. Matrix loops show the opposite: source order
+makes K-split `mma.bfp16ebs8` projections five times slower.
+
+**Fix:** Each leaf chooses its strategy once, before planning, from its Low
+packets: resource-stall when it contains `mma.*`, source priority otherwise.
+Planning rewrites the function (fixed-input copies, guarded motion, loop
+placement), so planning twice and comparing is not sound without a clone.
+`LOOM_AIE2P_SCHEDULE_STRATEGY=<0..3>` forces one strategy. With
+`LOOM_AIE2P_DUMP_BUNDLES=1`, every planned bundle is printed: issue cycle,
+logical cycle, block and slot mnemonics. Before this there was no view of the
+final VLIW schedule.
+
+**Gufo benefit:** LFM3-1.7B NPU prefill of 2,117 tokens drops from 6.47 s to
+5.96 s, with identical outputs. The SwiGLU row kernel drops from 1.89 ms to
+1.28 ms per 64 rows; SwiGLU time per 64-row pass falls from 43 ms to 29 ms. The
+K-split projections are unchanged.
+
+Validation on the local Strix Halo NPU:
+
+- 270 AIE2P `.loom-test` files were run with `loom-check`, with and without
+  the change (`LOOM_AIE2P_SCHEDULE_STRATEGY=3` reproduces the previous
+  behavior). Both runs fail the same 59 files; those failures exist on this
+  base without the change. Eight files had schedule-dependent code bytes or
+  sizes. Their goldens were updated, and one compile-report emission line now
+  matches its schedule-dependent counts with wildcards.
+- On device, the K-split projection results match an independent host
+  reference. For LFM3's teacher-forced next-token distributions (185 positions
+  against an FP32 GPU reference), the results are bit-identical before and
+  after the change.
 
 ## Build and qualification limits
 
