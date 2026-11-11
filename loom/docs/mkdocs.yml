@@ -123,6 +123,7 @@ nav:
   - Targets:
       - Target support: targets/index.md
       - Resident pipelines on XDNA: targets/xdna-pipelines.md
+      - Packed matrix operands on XDNA: targets/xdna-packed-operands.md
   - Reference:
       - Reference map: reference/index.md
       - Dialects: reference/dialects/index.md
