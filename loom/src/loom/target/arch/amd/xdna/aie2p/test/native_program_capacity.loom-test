@@ -34,7 +34,7 @@ pipeline.def<kernel> public retain target(@device) @combined_program() run() {
   %memory = pipeline.memory<workgroup>[0, 3] : pool
   %bytes = index.constant 4096 : offset
   %storage = buffer.alloca<workgroup> pool(%memory) align(4) %bytes : buffer
-  // ERROR@+1: XDNA/058 {function_name="__aie2p_worker_helper_2", required="19532", capacity="16384"}
+  // ERROR@+1: XDNA/058 {function_name="__aie2p_worker_helper_2", required="19536", capacity="16384"}
   pipeline.strand workers([0, 3], [1, 1], [1, 1]) {
     func.call @fill_a(%storage) : (buffer)
     func.call @fill_b(%storage) : (buffer)
