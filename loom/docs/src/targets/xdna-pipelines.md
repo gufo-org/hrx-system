@@ -380,3 +380,6 @@ The XDNA HAL implements those steps for finite buffer-bound pipelines. General
 heterogeneous launch lowering, GPU participation/progress, and code-image
 replacement each need a consuming realization before they become executable
 capabilities of the source model.
+
+For host-prepared `bfp16ebs8` matrix weights, see the
+[packed operand byte layout](xdna-packed-operands.md).
